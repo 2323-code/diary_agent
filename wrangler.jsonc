@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "discord-daily-report-agent",
+  "name": "diary-agent",
   "main": "src/worker.ts",
   "compatibility_date": "2026-06-21",
   "compatibility_flags": ["nodejs_compat"],
