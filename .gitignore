@@ -1,15 +1,13 @@
 # 環境変数（絶対にコミットしない）
 .env
 
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.pytest_cache/
-*.egg-info/
+# Node.js / TypeScript
+node_modules/
 dist/
-build/
-.eggs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # 仮想環境
 .venv/
