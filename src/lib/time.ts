@@ -37,10 +37,24 @@ export function addJstDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-export function jstDayRangeAsUtc(date = new Date()): { start: Date; end: Date } {
+export function jstDayRangeAsUtc(date = new Date()): {
+  start: Date;
+  end: Date;
+} {
   const { year, month, day } = getJstDateParts(date);
   const start = new Date(Date.UTC(year, month - 1, day) - JST_OFFSET_MS);
   const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
+}
+
+export function jstDayRangeForReportAsUtc(date = new Date()): {
+  start: Date;
+  end: Date;
+} {
+  const { year, month, day } = getJstDateParts(date);
+  // JST 22:16 / 22:15 を UTC に合わせる
+  const start = new Date(Date.UTC(year, month - 1, day - 1, 13, 16, 0));
+  const end = new Date(Date.UTC(year, month - 1, day, 13, 15, 0));
   return { start, end };
 }
 

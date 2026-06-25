@@ -12,7 +12,7 @@ import {
   formatJstTime,
   getJstDateParts,
   isLastDayOfMonthJst,
-  jstDayRangeAsUtc,
+  jstDayRangeForReportAsUtc,
   monthRangeJstAsUtc,
 } from "./time.js";
 
@@ -64,7 +64,9 @@ async function discordRequest<T>(
     } catch {
       // Keep the raw body.
     }
-    throw new Error(`Discord API error ${response.status}: ${JSON.stringify(detail)}`);
+    throw new Error(
+      `Discord API error ${response.status}: ${JSON.stringify(detail)}`,
+    );
   }
 
   if (response.status === 204) {
@@ -74,7 +76,11 @@ async function discordRequest<T>(
   return (await response.json()) as T;
 }
 
-async function sendDiscordMessage(env: ReportEnv, channelId: string, content: string): Promise<void> {
+async function sendDiscordMessage(
+  env: ReportEnv,
+  channelId: string,
+  content: string,
+): Promise<void> {
   await discordRequest(env, `/channels/${channelId}/messages`, {
     method: "POST",
     body: JSON.stringify({ content }),
@@ -104,13 +110,19 @@ async function fetchBotUserId(env: ReportEnv): Promise<string> {
 
 function extractClaudeText(response: Anthropic.Messages.Message): string {
   return response.content
-    .filter((block): block is Anthropic.Messages.TextBlock => block.type === "text")
+    .filter(
+      (block): block is Anthropic.Messages.TextBlock => block.type === "text",
+    )
     .map((block) => block.text)
     .join("\n")
     .trim();
 }
 
-async function callClaude(env: ReportEnv, system: string, user: string): Promise<string> {
+async function callClaude(
+  env: ReportEnv,
+  system: string,
+  user: string,
+): Promise<string> {
   const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
   const response = await anthropic.messages.create({
     model: env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
@@ -122,19 +134,25 @@ async function callClaude(env: ReportEnv, system: string, user: string): Promise
   return extractClaudeText(response);
 }
 
-async function fetchMemosForJstDate(env: ReportEnv, targetDate: Date): Promise<string[]> {
-  const { start, end } = jstDayRangeAsUtc(targetDate);
+async function fetchMemosForJstDate(
+  env: ReportEnv,
+  targetDate: Date,
+): Promise<string[]> {
+  const { start, end } = jstDayRangeForReportAsUtc(targetDate);
   const messages: DiscordMessage[] = [];
   let before: string | undefined;
 
   while (true) {
-    const batch = await fetchChannelMessages(env, env.DISCORD_MEMO_CHANNEL_ID, { before });
+    const batch = await fetchChannelMessages(env, env.DISCORD_MEMO_CHANNEL_ID, {
+      before,
+    });
     if (batch.length === 0) {
       break;
     }
 
     const sorted = [...batch].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
     messages.push(
@@ -154,25 +172,40 @@ async function fetchMemosForJstDate(env: ReportEnv, targetDate: Date): Promise<s
 
   return messages
     .filter((message) => !message.author.bot)
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .map((message) => `[${formatJstTime(new Date(message.timestamp))}] ${message.content}`)
+    .sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    )
+    .map(
+      (message) =>
+        `[${formatJstTime(new Date(message.timestamp))}] ${message.content}`,
+    )
     .filter((line) => line.trim().length > 8);
 }
 
-async function fetchMonthReports(env: ReportEnv, year: number, month: number): Promise<string[]> {
+async function fetchMonthReports(
+  env: ReportEnv,
+  year: number,
+  month: number,
+): Promise<string[]> {
   const { start, end } = monthRangeJstAsUtc(year, month);
   const botUserId = await fetchBotUserId(env);
   const reports: string[] = [];
   let before: string | undefined;
 
   while (true) {
-    const batch = await fetchChannelMessages(env, env.DISCORD_REPORT_CHANNEL_ID, { before });
+    const batch = await fetchChannelMessages(
+      env,
+      env.DISCORD_REPORT_CHANNEL_ID,
+      { before },
+    );
     if (batch.length === 0) {
       break;
     }
 
     const sorted = [...batch].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
     for (const message of sorted) {
@@ -202,7 +235,10 @@ async function fetchMonthReports(env: ReportEnv, year: number, month: number): P
   return reports.reverse();
 }
 
-export async function generateDailyReport(env: ReportEnv, targetDate = new Date()): Promise<void> {
+export async function generateDailyReport(
+  env: ReportEnv,
+  targetDate = new Date(),
+): Promise<void> {
   const memos = await fetchMemosForJstDate(env, targetDate);
   const todayStr = formatJstDate(targetDate);
 
@@ -229,6 +265,8 @@ Discordの雑記（times）から、簡潔でわかりやすい日報を生成�
 - 雑記から読み取れる次のアクション（明確でなければ「未定」）
 
 ルール:
+- 記録内容をもとに作成し、根拠のない推測は追加しない
+- ただし記録内容から自然に導き出せることは含めてもよい
 - 敬語不要、簡潔に
 - 重複をまとめる
 - 時刻は参考程度に使い、時系列の羅列にしない`;
@@ -240,7 +278,11 @@ Discordの雑記（times）から、簡潔でわかりやすい日報を生成�
     message = `${message.slice(0, SAFE_DISCORD_LIMIT)}\n\n...(省略)`;
   }
 
-  await sendDiscordMessage(env, env.DISCORD_REPORT_CHANNEL_ID, message.slice(0, DISCORD_LIMIT));
+  await sendDiscordMessage(
+    env,
+    env.DISCORD_REPORT_CHANNEL_ID,
+    message.slice(0, DISCORD_LIMIT),
+  );
 }
 
 export async function generateMonthlyReport(
@@ -277,6 +319,8 @@ export async function generateMonthlyReport(
 - 継続すること、改善したいこと
 
 ルール:
+- 日報の内容をもとに作成し、根拠のない推測は追加しない
+- ただし日報内容から自然に導き出せることは含めてもよい
 - 全日報を横断して重複をまとめる
 - 細かすぎる作業は統合して書く
 - ポジティブかつ具体的に`;
@@ -291,7 +335,10 @@ export async function generateMonthlyReport(
   }
 }
 
-export async function runScheduledReports(env: ReportEnv, scheduledAt = new Date()): Promise<void> {
+export async function runScheduledReports(
+  env: ReportEnv,
+  scheduledAt = new Date(),
+): Promise<void> {
   await generateDailyReport(env, scheduledAt);
 
   if (isLastDayOfMonthJst(scheduledAt)) {
@@ -300,6 +347,9 @@ export async function runScheduledReports(env: ReportEnv, scheduledAt = new Date
   }
 }
 
-export function resolveManualDailyTarget(commandName: string, now = new Date()): Date {
+export function resolveManualDailyTarget(
+  commandName: string,
+  now = new Date(),
+): Date {
   return commandName === "daily_report_yesterday" ? addJstDays(now, -1) : now;
 }

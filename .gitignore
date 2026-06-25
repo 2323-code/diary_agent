@@ -20,6 +20,9 @@ env/
 *.swp
 *.swo
 
+# Wrangler local state
+.wrangler/
+
 # OS
 .DS_Store
 Thumbs.db

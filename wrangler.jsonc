@@ -5,7 +5,7 @@
   "compatibility_date": "2026-06-21",
   "compatibility_flags": ["nodejs_compat"],
   "triggers": {
-    "crons": ["59 14 * * *"],
+    "crons": ["15 13 * * *"],
   },
   "vars": {
     "ANTHROPIC_MODEL": "claude-sonnet-4-6",
