@@ -246,7 +246,7 @@ export async function generateDailyReport(
     await sendDiscordMessage(
       env,
       env.DISCORD_REPORT_CHANNEL_ID,
-      `📋 **${todayStr}の日報**\n\n今日は雑記が記録されていませんでした。`,
+      `📋 **${todayStr}の日報**\n\n今日の日報はお休みです`,
     );
     return;
   }
