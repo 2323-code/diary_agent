@@ -8,6 +8,7 @@ import {
   getJstDateParts,
   isLastDayOfMonthJst,
   jstDayRangeAsUtc,
+  jstDayRangeForReportAsUtc,
   millisecondsUntilNextJst,
   monthRangeJstAsUtc,
 } from "../src/lib/time.js";
@@ -34,6 +35,15 @@ describe("JST time helpers", () => {
     assert.equal(end.toISOString(), "2026-06-22T15:00:00.000Z");
   });
 
+  it("returns the UTC range for the report window from 22:16 JST to 22:15 JST", () => {
+    const { start, end } = jstDayRangeForReportAsUtc(
+      new Date("2026-06-21T13:15:00.000Z"),
+    );
+
+    assert.equal(start.toISOString(), "2026-06-20T13:16:00.000Z");
+    assert.equal(end.toISOString(), "2026-06-21T13:15:00.000Z");
+  });
+
   it("moves dates by JST calendar days", () => {
     assert.equal(
       formatJstDate(addJstDays(new Date("2026-07-01T00:30:00.000Z"), -1)),
@@ -49,8 +59,14 @@ describe("JST time helpers", () => {
   });
 
   it("detects the last day of the month in JST", () => {
-    assert.equal(isLastDayOfMonthJst(new Date("2026-06-30T14:59:00.000Z")), true);
-    assert.equal(isLastDayOfMonthJst(new Date("2026-06-30T15:00:00.000Z")), false);
+    assert.equal(
+      isLastDayOfMonthJst(new Date("2026-06-30T14:59:00.000Z")),
+      true,
+    );
+    assert.equal(
+      isLastDayOfMonthJst(new Date("2026-06-30T15:00:00.000Z")),
+      false,
+    );
   });
 
   it("calculates the next scheduled JST run", () => {
